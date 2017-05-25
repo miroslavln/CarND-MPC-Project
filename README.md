@@ -2,6 +2,50 @@
 Self-Driving Car Engineer Nanodegree Program
 
 ---
+## Implementation
+
+The MPC controller requires way-points of the desired path to calculate
+the actuator values. The simulator provides the way-points
+in global coordinates which have to be converted to car reference coordinates
+after which a polynomial is fitted to estimate the necessary trajectory.
+3rd order polynomial is used to make the estimation.
+
+Initial cross track error and direction error are calculated and provided
+as part of the state which also includes the x position, y position, angle
+and velocity.
+The coefficients are provided to the MPC along with the initial state.
+
+The state transition is calculated in the following way.
+```java
+x[t+1] = x[t] + v[t] * cos(psi[t]) * dt
+y[t+1] = y[t] + v[t] * sin(psi[t]) * dt
+psi[t+1] = psi[t] + v[t] / Lf * delta[t] * dt
+v[t+1] = v[t] + a[t] * dt
+cte[t+1] = f(x[t]) - y[t] + v[t] * sin(epsi[t]) * dt
+epsi[t+1] = psi[t] - psides[t] + v[t] * delta[t] / Lf * dt
+psides[t] = atan(coeffs[1]+ 2*coeffs[2]* x0 + 3* coeffs[3] * pow(x0,2));
+```
+
+These calculations are used to compute the trajectory error which is necessary
+for the optimizer to choose the best actuator values for the desired trajectory.
+The error calculated is the cross track error, direction error and the difference
+between the current and desired speed. In the error calculation the difference between
+the actuator changes is also necessary and is calculated in the following way.
+
+
+```java
+for (int i = 0; i < N - 2; i++) {
+    fg[0] += 500 * CppAD::pow(vars[delta_start + i + 1] - vars[delta_start + i], 2);
+    fg[0] += CppAD::pow(vars[a_start + i + 1] - vars[a_start + i], 2);
+}
+```
+The enlarger penalty for the consecutive actuators is necessary to account for the latency
+in the system that could cause instability in the predictions.
+
+The chosen N is 12 and with dt = 0.05 makes for a lookahead time of 0.6 sec. Larger lookahead time
+seems not to produce a good results on the sharper turns as the car seems to be
+overestimating due to the latency in the actuators.
+
 
 ## Dependencies
 

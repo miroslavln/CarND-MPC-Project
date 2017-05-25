@@ -6,7 +6,7 @@
 using CppAD::AD;
 
 // TODO: Set the timestep length and duration
-size_t N = 10;
+size_t N = 12;
 double dt = 0.05;
 
 // This value assumes the model presented in the classroom is used.
@@ -33,20 +33,22 @@ size_t delta_start = epsi_start + N;
 size_t a_start = delta_start + N - 1;
 
 class FG_eval {
- public:
-  // Fitted polynomial coefficients
-  Eigen::VectorXd coeffs;
-  FG_eval(Eigen::VectorXd coeffs) { this->coeffs = coeffs; }
+public:
+    // Fitted polynomial coefficients
+    Eigen::VectorXd coeffs;
 
-  typedef CPPAD_TESTVECTOR(AD<double>) ADvector;
-  void operator()(ADvector& fg, const ADvector& vars) {
-    // fg a vector of constraints, x is a vector of constraints.
-    // NOTE: You'll probably go back and forth between this function and
-    // the Solver function below.
+    FG_eval(Eigen::VectorXd coeffs) { this->coeffs = coeffs; }
 
-    fg[0] = 0;
-      for (int i = 0; i < N; i++){
-        fg[0] += CppAD::pow(vars[cte_start + i] , 2);
+    typedef CPPAD_TESTVECTOR(AD<double>) ADvector;
+
+    void operator()(ADvector &fg, const ADvector &vars) {
+      // fg a vector of constraints, x is a vector of constraints.
+      // NOTE: You'll probably go back and forth between this function and
+      // the Solver function below.
+
+      fg[0] = 0;
+      for (int i = 0; i < N; i++) {
+        fg[0] += CppAD::pow(vars[cte_start + i], 2);
         fg[0] += CppAD::pow(vars[epsi_start + i], 2);
         fg[0] += CppAD::pow(vars[v_start + i] - desired_velocity, 2);
       }
@@ -61,7 +63,7 @@ class FG_eval {
       // Minimize the value gap between sequential actuations.
       for (int i = 0; i < N - 2; i++) {
         fg[0] += 500 * CppAD::pow(vars[delta_start + i + 1] - vars[delta_start + i], 2);
-        fg[0] +=  CppAD::pow(vars[a_start + i + 1] - vars[a_start + i], 2);
+        fg[0] += CppAD::pow(vars[a_start + i + 1] - vars[a_start + i], 2);
       }
 
 
@@ -74,28 +76,28 @@ class FG_eval {
 
       // The rest of the constraints
       for (int i = 0; i < N - 1; i++) {
-          // The state at time t+1 .
-          AD<double> x1 = vars[x_start + i + 1];
-          AD<double> y1 = vars[y_start + i + 1];
-          AD<double> psi1 = vars[psi_start + i + 1];
-          AD<double> v1 = vars[v_start + i + 1];
-          AD<double> cte1 = vars[cte_start + i + 1];
-          AD<double> epsi1 = vars[epsi_start + i + 1];
+        // The state at time t+1 .
+        AD<double> x1 = vars[x_start + i + 1];
+        AD<double> y1 = vars[y_start + i + 1];
+        AD<double> psi1 = vars[psi_start + i + 1];
+        AD<double> v1 = vars[v_start + i + 1];
+        AD<double> cte1 = vars[cte_start + i + 1];
+        AD<double> epsi1 = vars[epsi_start + i + 1];
 
-          // The state at time t.
-          AD<double> x0 = vars[x_start + i];
-          AD<double> y0 = vars[y_start + i];
-          AD<double> psi0 = vars[psi_start + i];
-          AD<double> v0 = vars[v_start + i];
-          AD<double> cte0 = vars[cte_start + i];
-          AD<double> epsi0 = vars[epsi_start + i];
+        // The state at time t.
+        AD<double> x0 = vars[x_start + i];
+        AD<double> y0 = vars[y_start + i];
+        AD<double> psi0 = vars[psi_start + i];
+        AD<double> v0 = vars[v_start + i];
+        AD<double> cte0 = vars[cte_start + i];
+        AD<double> epsi0 = vars[epsi_start + i];
 
-          // Only consider the actuation at time t.
-          AD<double> delta0 = vars[delta_start + i];
-          AD<double> a0 = vars[a_start + i];
+        // Only consider the actuation at time t.
+        AD<double> delta0 = vars[delta_start + i];
+        AD<double> a0 = vars[a_start + i];
 
-          AD<double> f0 = coeffs[0] + coeffs[1] * x0 + coeffs[2] * CppAD::pow(x0,2) + coeffs[3] * CppAD::pow(x0,3);
-          AD<double> psides0 = CppAD::atan(coeffs[1]+ 2*coeffs[2]* x0 + 3* coeffs[3] * CppAD::pow(x0,2));
+        AD<double> f0 = coeffs[0] + coeffs[1] * x0 + coeffs[2] * CppAD::pow(x0, 2) + coeffs[3] * CppAD::pow(x0, 3);
+        AD<double> psides0 = CppAD::atan(coeffs[1] + 2 * coeffs[2] * x0 + 3 * coeffs[3] * CppAD::pow(x0, 2));
 
         // Here's `x` to get you started.
         // The idea here is to constraint this value to be 0.
@@ -116,13 +118,14 @@ class FG_eval {
         fg[2 + epsi_start + i] =
             epsi1 - ((psi0 - psides0) + v0 * delta0 / Lf * dt);
       }
-  }
+    }
 };
 
 //
 // MPC class definition implementation.
 //
 MPC::MPC() {}
+
 MPC::~MPC() {}
 
 vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
@@ -246,10 +249,10 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
 
   predicted_x.resize(N);
   predicted_y.resize(N);
-  for (int i = 0; i<N; i++){
+  for (int i = 0; i < N; i++) {
     predicted_x[i] = solution.x[x_start + i];
     predicted_y[i] = solution.x[y_start + i];
   }
 
-  return  { solution.x[delta_start],   solution.x[a_start]};
+  return {solution.x[delta_start], solution.x[a_start]};
 }
