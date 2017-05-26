@@ -42,9 +42,12 @@ for (int i = 0; i < N - 2; i++) {
 The enlarger penalty for the consecutive actuators is necessary to account for the latency
 in the system that could cause instability in the predictions.
 
-The chosen N is 12 and with dt = 0.05 makes for a lookahead time of 0.6 sec. Larger lookahead time
-seems not to produce a good results on the sharper turns as the car seems to be
-overestimating due to the latency in the actuators.
+Initially I tried with N = 25 but with those settings the car could not
+stay on the track on the sharp turns. I also experimented with a larger and
+a smaller dt which also did not provide good results. With smaller dt of 0.01
+ the car was wobbling and loosing the road, with a larger of 0.1 it could
+ not make the sharp turns. At the end I settled on N = 15 and dt == 0.05
+ as it proved most accurate with the given latency.
 
 
 ## Dependencies
