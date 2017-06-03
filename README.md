@@ -35,20 +35,27 @@ the actuator changes is also necessary and is calculated in the following way.
 
 ```java
 for (int i = 0; i < N - 2; i++) {
-    fg[0] += 500 * CppAD::pow(vars[delta_start + i + 1] - vars[delta_start + i], 2);
+    fg[0] += 50000 * CppAD::pow(vars[delta_start + i + 1] - vars[delta_start + i], 2);
     fg[0] += CppAD::pow(vars[a_start + i + 1] - vars[a_start + i], 2);
 }
 ```
 The enlarger penalty for the consecutive actuators is necessary to account for the latency
-in the system that could cause instability in the predictions.
+in the system that could cause instability in the predictions. With smaller penalty
+the predicted track was looping around on itself. I also predict the state of the
+car in 100 ms by adding the predicted position based on the velocity and psi.
+I had to convert the velocity from MPH to Kilometers Per hour since the px and py
+measurements were in meters.
+```java
+double latency = 0.1;
+px += v * cos(psi) * latency * 1000 / 3600;
+py += v * sin(psi) * latency * 1000 / 3600;
+```
 
-Initially I tried with N = 25 but with those settings the car could not
-stay on the track on the sharp turns. I also experimented with a larger and
-a smaller dt which also did not provide good results. With smaller dt of 0.01
- the car was wobbling and loosing the road, with a larger of 0.1 it could
- not make the sharp turns. At the end I settled on N = 15 and dt == 0.05
- as it proved most accurate with the given latency.
-
+I tried with different values for the look ahead time. I tried with 1 sec and N=10
+this was causing the car to take the turns very sharply so it was leaving the marked
+pavement. I tried increasing N to 16, that had an improvement but it was still
+crossing into the red zone. I then decreased the look ahead time to 0.5 sec and N to 8
+which kept the car inside the pavement markings.
 
 ## Dependencies
 
