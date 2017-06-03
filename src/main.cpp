@@ -67,6 +67,17 @@ Eigen::VectorXd polyfit(Eigen::VectorXd xvals, Eigen::VectorXd yvals,
   return result;
 }
 
+void ConvertToCarCoords(double px, double py, double psi, const vector<double>& ptsx, const vector<double>& ptsy,
+                        vector<double>* pts_x_car, vector<double>* pts_y_car){
+
+  for (int i = 0; i < ptsx.size(); i++) {
+    double diff_x = ptsx[i] - px;
+    double diff_y = ptsy[i] - py;
+    pts_x_car->push_back(diff_x * cos(-psi) - diff_y * sin(-psi));
+    pts_y_car->push_back(diff_x * sin(-psi) + diff_y * cos(-psi));
+  }
+};
+
 
 int main() {
   uWS::Hub h;
@@ -95,25 +106,31 @@ int main() {
             double psi = j[1]["psi"];
             double v = j[1]["speed"];
 
+            //Convert to KmPH
+            v *= 1.60934;
             //Display the waypoints/reference line
             vector<double> pts_x_car;
             vector<double> pts_y_car;
 
-            for (int i = 0; i < ptsx.size(); i++) {
-              double diff_x = ptsx[i] - px;
-              double diff_y = ptsy[i] - py;
-              pts_x_car.push_back(diff_x * cos(-psi) - diff_y * sin(-psi));
-              pts_y_car.push_back(diff_x * sin(-psi) + diff_y * cos(-psi));
-            }
+            //Predict the state 100 ms in the future and evaluate the cre from that point
+
+            ConvertToCarCoords(px, py, psi, ptsx, ptsy, &pts_x_car, &pts_y_car);
+
             Eigen::VectorXd pts_x = Eigen::VectorXd::Map(pts_x_car.data(), pts_x_car.size());
             Eigen::VectorXd pts_y = Eigen::VectorXd::Map(pts_y_car.data(), pts_y_car.size());
 
-            Eigen::VectorXd coeffs = polyfit(pts_x, pts_y, 3);
+            Eigen::VectorXd coeffs = polyfit(pts_x, pts_y, 2);
+
             double cte = polyeval(coeffs, 0);
             double epsi = -atan(coeffs[1]);
 
+            double dt = 0.01;
+            double predicted_x = v * cos(psi) * dt / 3600;
+            double predicted_y = v * sin(psi) * dt / 3600;
+
+
             Eigen::VectorXd state(6);
-            state << 0, 0, 0, v, cte, epsi;
+            state << predicted_x, predicted_y, 0, v, cte, epsi;
 
             std::vector<double> res = mpc.Solve(state, coeffs);
 
@@ -121,7 +138,7 @@ int main() {
             double throttle_value = res[1];
 
             json msgJson;
-            msgJson["steering_angle"] = -steer_value;
+            msgJson["steering_angle"] = -steer_value / deg2rad(25);
             msgJson["throttle"] = throttle_value;
 
             //Display the MPC predicted trajectory

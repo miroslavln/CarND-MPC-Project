@@ -5,9 +5,9 @@
 
 using CppAD::AD;
 
-// TODO: Set the timestep length and duration
-size_t N = 15;
-double dt = 0.05;
+double look_ahead_time = 1.0; //sec
+size_t N = 16;
+double dt = look_ahead_time / N;
 
 // This value assumes the model presented in the classroom is used.
 //
@@ -21,7 +21,7 @@ double dt = 0.05;
 // This is the length from front to CoG that has a similar radius.
 const double Lf = 2.67;
 
-double desired_velocity = 50;
+double desired_velocity = 100; //in KmPh
 
 size_t x_start = 0;
 size_t y_start = x_start + N;
@@ -46,10 +46,11 @@ public:
       // NOTE: You'll probably go back and forth between this function and
       // the Solver function below.
 
+
       fg[0] = 0;
       for (int i = 0; i < N; i++) {
         fg[0] += CppAD::pow(vars[cte_start + i], 2);
-        fg[0] += CppAD::pow(vars[epsi_start + i], 2);
+        fg[0] += 200 * CppAD::pow(vars[epsi_start + i], 2);
         fg[0] += CppAD::pow(vars[v_start + i] - desired_velocity, 2);
       }
 
@@ -62,8 +63,8 @@ public:
 
       // Minimize the value gap between sequential actuations.
       for (int i = 0; i < N - 2; i++) {
-        fg[0] += 500 * CppAD::pow(vars[delta_start + i + 1] - vars[delta_start + i], 2);
-        fg[0] += CppAD::pow(vars[a_start + i + 1] - vars[a_start + i], 2);
+        fg[0] += 30000 * CppAD::pow(vars[delta_start + i + 1] - vars[delta_start + i], 2);
+        fg[0] +=  CppAD::pow(vars[a_start + i + 1] - vars[a_start + i], 2);
       }
 
 
@@ -96,8 +97,8 @@ public:
         AD<double> delta0 = vars[delta_start + i];
         AD<double> a0 = vars[a_start + i];
 
-        AD<double> f0 = coeffs[0] + coeffs[1] * x0 + coeffs[2] * CppAD::pow(x0, 2) + coeffs[3] * CppAD::pow(x0, 3);
-        AD<double> psides0 = CppAD::atan(coeffs[1] + 2 * coeffs[2] * x0 + 3 * coeffs[3] * CppAD::pow(x0, 2));
+        AD<double> f0 = coeffs[0] + coeffs[1] * x0 + coeffs[2] * CppAD::pow(x0, 2);
+        AD<double> psides0 = CppAD::atan(coeffs[1] + 2 * coeffs[2] * x0);
 
         // Here's `x` to get you started.
         // The idea here is to constraint this value to be 0.
