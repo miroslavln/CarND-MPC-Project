@@ -5,8 +5,8 @@
 
 using CppAD::AD;
 
-double look_ahead_time = 1.0; //sec
-size_t N = 16;
+double look_ahead_time = 0.5; //sec
+size_t N = 8;
 double dt = look_ahead_time / N;
 
 // This value assumes the model presented in the classroom is used.
@@ -63,7 +63,7 @@ public:
 
       // Minimize the value gap between sequential actuations.
       for (int i = 0; i < N - 2; i++) {
-        fg[0] += 30000 * CppAD::pow(vars[delta_start + i + 1] - vars[delta_start + i], 2);
+        fg[0] += 50000 * CppAD::pow(vars[delta_start + i + 1] - vars[delta_start + i], 2);
         fg[0] +=  CppAD::pow(vars[a_start + i + 1] - vars[a_start + i], 2);
       }
 

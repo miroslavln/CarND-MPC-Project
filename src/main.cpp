@@ -108,11 +108,16 @@ int main() {
 
             //Convert to KmPH
             v *= 1.60934;
+
+            //Predict the state 100 ms in the future and evaluate the cre from that point
+            double latency = 0.1;
+            px += v * cos(psi) * latency * 1000 / 3600;
+            py += v * sin(psi) * latency * 1000 / 3600;
+
             //Display the waypoints/reference line
             vector<double> pts_x_car;
             vector<double> pts_y_car;
 
-            //Predict the state 100 ms in the future and evaluate the cre from that point
 
             ConvertToCarCoords(px, py, psi, ptsx, ptsy, &pts_x_car, &pts_y_car);
 
@@ -124,13 +129,8 @@ int main() {
             double cte = polyeval(coeffs, 0);
             double epsi = -atan(coeffs[1]);
 
-            double dt = 0.01;
-            double predicted_x = v * cos(psi) * dt / 3600;
-            double predicted_y = v * sin(psi) * dt / 3600;
-
-
             Eigen::VectorXd state(6);
-            state << predicted_x, predicted_y, 0, v, cte, epsi;
+            state << 0, 0, 0, v, cte, epsi;
 
             std::vector<double> res = mpc.Solve(state, coeffs);
 
